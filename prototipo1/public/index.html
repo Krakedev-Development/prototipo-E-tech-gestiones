@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Tech | Sistema de Mantenimiento</title>
+    <link rel="icon" type="image/png" href="logo-cabecera.png">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+
+    <!-- ===== LOGIN ===== -->
+    <div id="loginContainer">
+        <div class="login-card">
+            <div class="login-logo">⚙️</div>
+            <h1>Servicio Técnico MAQ Codific Industrial</h1>
+            <p class="login-sub">Sistema de Gestión de Mantenimiento</p>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>Correo electrónico</label>
+                    <input type="email" id="loginEmail" placeholder="usuario@etech.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-login">Iniciar Sesión</button>
+                <div id="loginError" class="alert alert-error" style="display:none"></div>
+            </form>
+            <div class="login-demo">
+                <p>Usuarios de prueba (contraseña: <strong>password123</strong>)</p>
+                <div class="demo-users">
+                    <span onclick="setDemo('admin@etech.com')">👑 Admin</span>
+                    <span onclick="setDemo('tecnico@etech.com')">🔧 Técnico</span>
+                    <span onclick="setDemo('cliente@demo.com')">👤 Cliente</span>
+                    <span onclick="setDemo('facturacion@etech.com')">💰 Facturación</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== APP PRINCIPAL ===== -->
+    <div id="mainContainer" style="display:none">
+
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <img src="logo.png" alt="E-Tech" class="sidebar-logo-img">
+                <button id="sidebarToggle" class="sidebar-toggle">☰</button>
+            </div>
+            <div class="sidebar-user">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div class="user-details">
+                    <span id="sidebarUserName">Usuario</span>
+                    <span id="sidebarUserRol" class="rol-badge">rol</span>
+                </div>
+            </div>
+            <nav id="sidebarNav">
+                <!-- Se genera dinámicamente según rol -->
+            </nav>
+            <button id="logoutBtn" class="btn-logout">🚪 Cerrar Sesión</button>
+        </aside>
+
+        <!-- Contenido principal -->
+        <div id="pageContent">
+            <header id="topBar">
+                <button id="menuToggle" class="menu-toggle">☰</button>
+                <h2 id="pageTitle">Dashboard</h2>
+                <div class="topbar-right">
+                    <span id="topUserName"></span>
+                </div>
+            </header>
+
+            <main id="mainContent">
+
+                <!-- ===== DASHBOARD ===== -->
+                <section id="dashboardView" class="view">
+                    <div class="stats-grid" id="statsGrid"></div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Atenciones por día (últimos 7 días)</h3>
+                            <div id="chartDia" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Atenciones por cliente (Top 5)</h3>
+                            <div id="chartCliente" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Equipos con más incidencias</h3>
+                            <div id="chartEquipos" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Órdenes por estado</h3>
+                            <div id="chartEstados" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Fallas más comunes por categoría</h3>
+                            <div id="chartCategorias" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Atenciones por técnico (Top 5)</h3>
+                            <div id="chartTecnicos" class="bar-chart"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== ÓRDENES ===== -->
+                <section id="ordenesView" class="view">
+                    <div class="view-header">
+                        <h2>Órdenes de Trabajo</h2>
+                        <div class="view-actions">
+                            <input type="text" id="buscarOrden" placeholder="🔍 Buscar..." class="input-search">
+                            <select id="filtroEstado" class="input-select">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="en_proceso">En Proceso</option>
+                                <option value="cerrada">Cerrada</option>
+                            </select>
+                            <button class="btn-export" onclick="exportarReporteGeneral()">📊 Exportar Excel</button>
+                        </div>
+                    </div>
+                    <div id="ordenesContainer"></div>
+                </section>
+
+                <!-- ===== NUEVA / EDITAR ORDEN ===== -->
+                <section id="formularioView" class="view">
+                    <div class="view-header">
+                        <h2 id="formularioTitulo">Nueva Orden de Trabajo</h2>
+                    </div>
+                    <form id="ordenForm" class="form-orden">
+                        <input type="hidden" id="ordenId">
+
+                        <!-- Datos generales -->
+                        <div class="form-card">
+                            <div class="form-card-title">📋 Datos Generales</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>N° de Orden *</label>
+                                    <input type="text" name="numero_orden" id="f_numero_orden" required placeholder="OT-2026-001">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fecha *</label>
+                                    <input type="date" name="fecha" id="f_fecha" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Cliente *</label>
+                                    <select name="cliente_id" id="f_cliente" required>
+                                        <option value="">Seleccionar cliente...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Técnico *</label>
+                                    <select name="tecnico_id" id="f_tecnico" required>
+                                        <option value="">Seleccionar técnico...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Equipo *</label>
+                                    <select name="equipo_id" id="f_equipo" required>
+                                        <option value="">Seleccionar equipo...</option>
+                                    </select>
+                                    <div id="equipoInfoPreview" style="display:none;margin-top:6px;padding:8px 10px;background:var(--primary-light);border-radius:6px;font-size:12px;color:var(--primary);flex-wrap:wrap;gap:6px;line-height:1.8"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tipo de Servicio *</label>
+                                    <select name="tipo_servicio" id="f_tipo_servicio" required>
+                                        <option value="">Seleccionar...</option>
+                                        <option value="mantenimiento">🔧 Mantenimiento</option>
+                                        <option value="reparacion">🛠️ Reparación</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Categoría de Incidencia</label>
+                                    <select name="categoria_incidencia" id="f_categoria">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="hidraulica">💧 Hidráulica</option>
+                                        <option value="electronica">⚡ Electrónica</option>
+                                        <option value="cabezal">🖨️ Cabezal</option>
+                                        <option value="otro">🔩 Otro</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Contacto</label>
+                                    <input type="text" name="contacto" id="f_contacto" placeholder="Nombre del contacto">
+                                </div>
+                                <div class="form-group">
+                                    <label>Facturar a</label>
+                                    <input type="text" name="facturar_a" id="f_facturar_a" placeholder="Empresa o persona">
+                                </div>
+                                <div class="form-group">
+                                    <label>Hora Entrada</label>
+                                    <input type="time" name="hora_entrada" id="f_hora_entrada">
+                                </div>
+                                <div class="form-group">
+                                    <label>Hora Salida</label>
+                                    <input type="time" name="hora_salida" id="f_hora_salida">
+                                </div>
+                                <div class="form-group">
+                                    <label>Horas Facturadas</label>
+                                    <input type="number" name="horas_fact" id="f_horas_fact" step="0.5" min="0" placeholder="0.0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Tipo de Visita</label>
+                                    <input type="text" name="tipo_visita" id="f_tipo_visita" placeholder="Ej: Preventivo, Correctivo">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado inicial -->
+                        <div class="form-card">
+                            <div class="form-card-title">🖨️ Datos del Equipo en Sitio</div>
+                            <p style="font-size:12px;color:var(--gray-400);margin-bottom:14px">Estos valores se pre-llenan desde el catálogo. Puedes ajustarlos según lo medido en sitio.</p>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Presión Objetivo</label>
+                                    <input type="text" id="f_eq_presion_obj" placeholder="Ej: 45 PSI">
+                                </div>
+                                <div class="form-group">
+                                    <label>Presión Real</label>
+                                    <input type="text" id="f_eq_presion_real" placeholder="Ej: 42 PSI">
+                                </div>
+                                <div class="form-group">
+                                    <label>Voltaje Mod.</label>
+                                    <input type="text" id="f_eq_voltaje" placeholder="Ej: 220V">
+                                </div>
+                                <div class="form-group">
+                                    <label>Viscosidad</label>
+                                    <input type="text" id="f_eq_viscosidad" placeholder="Ej: 10 cP">
+                                </div>
+                                <div class="form-group">
+                                    <label>Rev. Bomba</label>
+                                    <input type="text" id="f_eq_rev_bomba" placeholder="Ej: 1450 RPM">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ubicación</label>
+                                    <input type="text" id="f_eq_ubicacion" placeholder="Ej: Línea de producción A">
+                                </div>
+                            </div>
+                            <div class="checks-row" style="margin-top:14px">
+                                <label class="check-label">
+                                    <input type="checkbox" name="inspeccion_visual" id="f_inspeccion">
+                                    <span>Inspección Visual General</span>
+                                </label>
+                                <label class="check-label">
+                                    <input type="checkbox" name="revision_tierra" id="f_revision">
+                                    <span>Revisión con Tierra</span>
+                                </label>
+                                <label class="check-label">
+                                    <input type="checkbox" name="prueba_electrovalvulas" id="f_prueba">
+                                    <span>Prueba Electroválvulas</span>
+                                </label>
+                            </div>
+                            <div class="form-group full-width" style="margin-top:14px">
+                                <label>Descripción del estado inicial</label>
+                                <textarea name="estado_inicial" id="f_estado_inicial" rows="3" placeholder="Describe el estado en que se encontró el equipo..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Trabajo realizado -->
+                        <div class="form-card">
+                            <div class="form-card-title">🛠️ Trabajo Realizado</div>
+                            <div class="form-group full-width">
+                                <label>Descripción de la Falla</label>
+                                <textarea name="descripcion_falla" id="f_descripcion_falla" rows="3" placeholder="Describe la falla reportada..."></textarea>
+                            </div>
+                            <div class="form-group full-width">
+                                <label>Trabajo Realizado *</label>
+                                <textarea name="trabajo_realizado" id="f_trabajo_realizado" rows="5" placeholder="Detalla el trabajo realizado..."></textarea>
+                            </div>
+                            <div class="form-group full-width">
+                                <label>Observaciones</label>
+                                <textarea name="observaciones" id="f_observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
+                            </div>
+                            <div class="form-group full-width">
+                                <label>Recomendaciones</label>
+                                <textarea name="recomendaciones" id="f_recomendaciones" rows="3" placeholder="Recomendaciones para el cliente..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Repuestos -->
+                        <div class="form-card">
+                            <div class="form-card-title">📦 Repuestos / Materiales Utilizados</div>
+                            <div id="repuestosContainer">
+                                <div class="repuesto-row" data-index="0">
+                                    <input type="text" placeholder="N° Parte" class="rep-parte">
+                                    <input type="text" placeholder="Descripción *" class="rep-desc">
+                                    <input type="number" placeholder="Cant." class="rep-cant" min="1" value="1">
+                                    <input type="number" placeholder="Costo" class="rep-costo" step="0.01" min="0">
+                                    <input type="text" placeholder="Observaciones" class="rep-obs">
+                                    <button type="button" class="btn-remove-rep" onclick="removeRepuesto(this)">✕</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-add-rep" onclick="addRepuesto()">+ Agregar repuesto</button>
+                        </div>
+
+                        <!-- Firmas -->
+                        <div class="form-card">
+                            <div class="form-card-title">✍️ Firmas — Conformidad con lo Expuesto</div>
+                            <div class="firmas-grid">
+                                <div class="firma-box">
+                                    <label>Firma E-Tech (Técnico)</label>
+                                    <canvas id="canvasTecnico" class="firma-canvas" width="300" height="120"></canvas>
+                                    <div class="firma-actions">
+                                        <button type="button" onclick="limpiarFirma('canvasTecnico')">Limpiar</button>
+                                    </div>
+                                </div>
+                                <div class="firma-box">
+                                    <label>Firma del Cliente</label>
+                                    <canvas id="canvasCliente" class="firma-canvas" width="300" height="120"></canvas>
+                                    <div class="firma-actions">
+                                        <button type="button" onclick="limpiarFirma('canvasCliente')">Limpiar</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-grid" style="margin-top:14px">
+                                <div class="form-group">
+                                    <label>Nombre del Representante del Cliente</label>
+                                    <input type="text" id="f_nombre_cliente_firma" placeholder="Nombre completo">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fecha / Hora de Firma</label>
+                                    <input type="datetime-local" id="f_fecha_hora_firma">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-footer">
+                            <button type="button" class="btn-secondary" onclick="cambiarVista('ordenes')">Cancelar</button>
+                            <button type="submit" class="btn-primary">💾 Guardar Orden</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- ===== HISTORIAL EQUIPO ===== -->
+                <section id="historialEquipoView" class="view">
+                    <div class="view-header">
+                        <h2 id="historialEquipoTitulo">Historial del Equipo</h2>
+                        <button class="btn-secondary" onclick="cambiarVista('equipos')">← Volver</button>
+                    </div>
+                    <div id="historialEquipoContainer"></div>
+                </section>
+
+                <!-- ===== EQUIPOS ===== -->
+                <section id="equiposView" class="view">
+                    <div class="view-header">
+                        <h2>Catálogo de Equipos</h2>
+                        <div class="view-actions">
+                            <input type="text" id="buscarEquipo" placeholder="🔍 Buscar equipo..." class="input-search">
+                            <select id="filtroTipoEquipo" class="input-select">
+                                <option value="">Todos los tipos</option>
+                                <option value="impresora">Impresora</option>
+                                <option value="plotter">Plotter</option>
+                                <option value="fotocopiadora">Fotocopiadora</option>
+                                <option value="codificadora">Codificadora</option>
+                                <option value="escaner">Escáner</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                            <button class="btn-primary" onclick="abrirModalEquipo()">+ Nuevo Equipo</button>
+                        </div>
+                    </div>
+                    <div id="equiposContainer"></div>
+                </section>
+
+                <!-- ===== USUARIOS ===== -->
+                <section id="usuariosView" class="view">
+                    <div class="view-header">
+                        <h2>Gestión de Usuarios</h2>
+                        <div class="view-actions">
+                            <input type="text" id="buscarUsuario" placeholder="🔍 Buscar usuario..." class="input-search">
+                            <select id="filtroRolUsuario" class="input-select">
+                                <option value="">Todos los roles</option>
+                                <option value="admin">👑 Admin</option>
+                                <option value="tecnico">🔧 Técnico</option>
+                                <option value="cliente">👤 Cliente</option>
+                                <option value="facturacion">💰 Facturación</option>
+                            </select>
+                            <button class="btn-primary" onclick="abrirModalUsuario()">+ Nuevo Usuario</button>
+                        </div>
+                    </div>
+                    <div id="usuariosContainer"></div>
+                </section>
+
+                <!-- ===== DASHBOARD TÉCNICO ===== -->
+                <section id="misDatosView" class="view">
+                    <div class="view-header">
+                        <h2>Mi Resumen</h2>
+                    </div>
+                    <div class="stats-grid" id="statsTecnico"></div>
+                    <div class="charts-grid" style="margin-top:20px">
+                        <div class="chart-card">
+                            <h3>Mis órdenes por estado</h3>
+                            <div id="chartTecnicoEstados" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Mis atenciones recientes (7 días)</h3>
+                            <div id="chartTecnicoDias" class="bar-chart"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== DETALLE ORDEN (TÉCNICO) ===== -->
+                <section id="detalleOrdenView" class="view">
+                    <div class="view-header">
+                        <h2>Detalle de Orden</h2>
+                        <div class="view-actions">
+                            <button class="btn-secondary" onclick="cambiarVista('ordenes')">← Volver</button>
+                        </div>
+                    </div>
+                    <div id="detalleOrdenContainer"></div>
+                </section>
+
+                <!-- ===== DETALLE ORDEN CLIENTE ===== -->
+                <section id="detalleClienteView" class="view">
+                    <div class="view-header">
+                        <h2>Detalle de mi Orden</h2>
+                        <button class="btn-secondary" onclick="cambiarVista('ordenes')">← Volver</button>
+                    </div>
+                    <div id="detalleClienteContainer"></div>
+                </section>
+
+                <!-- ===== DETALLE ORDEN FACTURACIÓN ===== -->
+                <section id="detalleFacturacionView" class="view">
+                    <div class="view-header">
+                        <h2>Validación de Orden</h2>
+                        <button class="btn-secondary" onclick="cambiarVista('facturacion')">← Volver</button>
+                    </div>
+                    <div id="detalleFacturacionContainer"></div>
+                </section>
+
+                <!-- ===== PANEL FACTURACIÓN ===== -->
+                <section id="facturacionView" class="view">
+                    <div class="view-header">
+                        <h2>Panel de Facturación</h2>
+                        <span class="info-badge">Solo consulta — las órdenes cerradas se facturan externamente</span>
+                    </div>
+                    <div id="facturacionContainer"></div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ===== MODAL EQUIPO ===== -->
+    <div id="modalEquipo" class="modal" style="display:none">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalEquipoTitulo">Nuevo Equipo</h3>
+                <button onclick="cerrarModal('modalEquipo')">✕</button>
+            </div>
+            <form id="equipoForm">
+                <input type="hidden" id="equipoId">
+                <div class="form-grid">
+                    <div class="form-group"><label>Marca *</label><input type="text" id="eq_marca" required></div>
+                    <div class="form-group"><label>Modelo *</label><input type="text" id="eq_modelo" required></div>
+                    <div class="form-group">
+                        <label>Tipo *</label>
+                        <select id="eq_tipo" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="impresora">Impresora</option>
+                            <option value="plotter">Plotter</option>
+                            <option value="fotocopiadora">Fotocopiadora</option>
+                            <option value="codificadora">Codificadora</option>
+                            <option value="escaner">Escáner</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Serie</label><input type="text" id="eq_serie"></div>
+                    <div class="form-group"><label>Ubicación</label><input type="text" id="eq_ubicacion"></div>
+                    <div class="form-group"><label>Cliente</label><select id="eq_cliente"><option value="">Sin asignar</option></select></div>
+                    <div class="form-group"><label>Presión Objetivo</label><input type="text" id="eq_presion_obj"></div>
+                    <div class="form-group"><label>Presión Real</label><input type="text" id="eq_presion_real"></div>
+                    <div class="form-group"><label>Voltaje Mod.</label><input type="text" id="eq_voltaje"></div>
+                    <div class="form-group"><label>Viscosidad</label><input type="text" id="eq_viscosidad"></div>
+                    <div class="form-group"><label>Rev. Bomba</label><input type="text" id="eq_rev_bomba"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modalEquipo')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== MODAL USUARIO ===== -->
+    <div id="modalUsuario" class="modal" style="display:none">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalUsuarioTitulo">Nuevo Usuario</h3>
+                <button onclick="cerrarModal('modalUsuario')">✕</button>
+            </div>
+            <form id="usuarioForm">
+                <input type="hidden" id="usuarioId">
+                <div class="form-grid">
+                    <div class="form-group"><label>Nombre *</label><input type="text" id="us_nombre" required></div>
+                    <div class="form-group"><label>Email *</label><input type="email" id="us_email" required></div>
+                    <div class="form-group"><label>Contraseña <span id="passLabel" style="color:var(--gray-400);font-weight:400">(dejar vacío para no cambiar)</span></label><input type="password" id="us_password" placeholder="Mínimo 6 caracteres"></div>
+                    <div class="form-group">
+                        <label>Rol *</label>
+                        <select id="us_rol" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="admin">👑 Administrador</option>
+                            <option value="tecnico">🔧 Técnico</option>
+                            <option value="cliente">👤 Cliente</option>
+                            <option value="facturacion">💰 Facturación</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Teléfono</label><input type="text" id="us_telefono"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modalUsuario')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast de notificaciones -->
+    <div id="toast" class="toast" style="display:none"></div>
+
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>
